@@ -346,12 +346,12 @@ def main(argv):
 
 def checkCloudCommand(bus_service, queue_name, localCommandSendAckWaitList, config_data):
      try:
-         print 'Trying to read from service bus'
+        print 'Trying to read from service bus'
         cloudCommand = bus_service.receive_queue_message(queue_name, peek_lock=False)
         print 'Done trying'
         if cloudCommand.body is not None:
-            print 'Message has a body'
-            gatewayId = config_data["Server"]["Deviceid"]
+           print 'Message has a body'
+           gatewayId = config_data["Server"]["Deviceid"]
            stringCommand = str(cloudCommand.body)
            print 'C: Received "' + stringCommand + '" => ',
 
@@ -359,14 +359,14 @@ def checkCloudCommand(bus_service, queue_name, localCommandSendAckWaitList, conf
            temp = stringCommand.split("-")
            if gatewayId is temp[0]:
                print 'Updating the gateway script'
-                updateGatewayScript()
-           else
-                #print 'stringCommand.split = ', temp
-                localNetworkDeviceID = config_data["Devices"].keys()[config_data["Devices"].values().index(temp[0])]
-                print 'for DeviceId=' + localNetworkDeviceID
-                localCommandSendAckWaitList.append(str(localNetworkDeviceID + '-' + temp[1]))
-                print 'L: Add command to Broadcast: "' + localNetworkDeviceID + '-' + temp[1] + '"'
-                localCommandSendAckWaitList = list(set(localCommandSendAckWaitList))
+               updateGatewayScript()
+           else:
+               #print 'stringCommand.split = ', temp
+               localNetworkDeviceID = config_data["Devices"].keys()[config_data["Devices"].values().index(temp[0])]
+               print 'for DeviceId=' + localNetworkDeviceID
+               localCommandSendAckWaitList.append(str(localNetworkDeviceID + '-' + temp[1]))
+               print 'L: Add command to Broadcast: "' + localNetworkDeviceID + '-' + temp[1] + '"'
+               localCommandSendAckWaitList = list(set(localCommandSendAckWaitList))
      except Exception, e:
         print 'bus_service.receive_queue_message throw an Exception'
         print repr(e)
