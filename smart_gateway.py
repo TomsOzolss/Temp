@@ -346,9 +346,11 @@ def main(argv):
 
 def checkCloudCommand(bus_service, queue_name, localCommandSendAckWaitList, config_data):
      try:
+         print 'Trying to read from service bus'
         cloudCommand = bus_service.receive_queue_message(queue_name, peek_lock=False)
-
+        print 'Done trying'
         if cloudCommand.body is not None:
+            print 'Message has a body'
             gatewayId = config_data["Server"]["Deviceid"]
            stringCommand = str(cloudCommand.body)
            print 'C: Received "' + stringCommand + '" => ',
@@ -365,8 +367,9 @@ def checkCloudCommand(bus_service, queue_name, localCommandSendAckWaitList, conf
                 localCommandSendAckWaitList.append(str(localNetworkDeviceID + '-' + temp[1]))
                 print 'L: Add command to Broadcast: "' + localNetworkDeviceID + '-' + temp[1] + '"'
                 localCommandSendAckWaitList = list(set(localCommandSendAckWaitList))
-     except:
+     except Exception, e:
         print 'bus_service.receive_queue_message throw an Exception'
+        print repr(e)
 
 if __name__ == "__main__":
    try:
