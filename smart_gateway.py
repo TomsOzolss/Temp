@@ -33,6 +33,42 @@ logging.basicConfig(level=logging.ERROR, filename=os.path.dirname(os.path.abspat
 
 session = FuturesSession(max_workers=10)
 
+##################################
+#   Update the gateway script    #
+##################################
+def updateGatewayScript():
+    gatewayScriptFileName = 'smart_gateway.py'
+    renamedGatewayScriptFileName = 'smart_gateway_previous.py'
+    directory = getcwd()
+    
+    filename = directory + gatewayScriptFileName
+
+    os.rename(gatewayScriptFileName, renamedGatewayScriptFileName)
+
+    try:
+        r = requests.get('https://raw.githubusercontent.com/vicy07/IoT_At_Home/master/Gateway/smart_gateway.py')
+        f = open(filename, 'w')
+        f.write(r.content)
+    except:
+        os.rename(renamedGatewayScriptFileName, gatewayScriptFileName)
+        print 'Update failed, reverting to previous version'
+
+    os.execl(gatewayScriptFileName, sys.argv[1:])
+
+##################################
+#   Revert to previous version   #
+##################################
+def revertToPreviousVersion():
+    gatewayScriptFileName = 'smart_gateway.py'
+    renamedGatewayScriptFileName = 'smart_gateway_previous.py'
+    directory = getcwd()
+    
+    filename = directory + gatewayScriptFileName
+
+    os.rename(renamedGatewayScriptFileName, gatewayScriptFileName)
+
+    os.execl(gatewayScriptFileName, sys.argv[1:])
+
 ##############################
 #   Compute secured Hash     #
 ##############################
@@ -202,20 +238,6 @@ def main(argv):
        os.popen('sudo -S date -s "' + nowPI + '"', 'w').write("123")
    else:
        print 'Error in setting time. Server response code: %i' % r.status_code
-
-   queue_name = 'custom_' + config_data["Server"]["id"] + '_' + config_data["Server"]["Deviceid"]
-   bus_service = ServiceBusService( service_namespace=config_data["Servicebus"]["namespace"], 
-                                    shared_access_key_name=config_data["Servicebus"]["shared_access_key_name"], 
-                                    shared_access_key_value=config_data["Servicebus"]["shared_access_key_value"])
-   try:
-      bus_service.receive_queue_message(queue_name, peek_lock=False)
-      print '  Actuator queue: ' + queue_name
-   except:
-      queue_options = Queue()
-      queue_options.max_size_in_megabytes = '1024'
-      queue_options.default_message_time_to_live = 'PT15M'
-      bus_service.create_queue(queue_name, queue_options)
-      print '  Actuator queue: ' + queue_name + ' (Created)'	   
 	   
    href = config_data["Server"]["url"] + 'api/Device/DeviceConfigurationUpdate'
    token = config_data["Server"]["key"]
@@ -251,6 +273,22 @@ def main(argv):
    else:
       print 'Error in Device configuration update. Server response code: {0} {1}'.format(r.status_code, r.content)
 
+   
+   queue_name = 'custom_' + config_data["Server"]["id"] + '_' + config_data["Server"]["Deviceid"]
+   bus_service = ServiceBusService( service_namespace=config_data["Servicebus"]["namespace"], 
+                                    shared_access_key_name=config_data["Servicebus"]["shared_access_key_name"], 
+                                    shared_access_key_value=config_data["Servicebus"]["shared_access_key_value"])
+   try:
+      bus_service.receive_queue_message(queue_name, peek_lock=False)
+      print '  Succesfully connected to queue'
+      print '  Actuator queue: ' + queue_name
+   except:
+      queue_options = Queue()
+      queue_options.max_size_in_megabytes = '1024'
+      queue_options.default_message_time_to_live = 'PT15M'
+      bus_service.create_queue(queue_name, queue_options)
+      print '  Succesfully created queue'
+      print '  Actuator queue: ' + queue_name + ' (Created)'
 
    GPIO.setwarnings(False)
 
@@ -348,7 +386,7 @@ def checkCloudCommand(bus_service, queue_name, localCommandSendAckWaitList, conf
      try:
         print 'Trying to read from service bus'
         cloudCommand = bus_service.receive_queue_message(queue_name, peek_lock=False)
-        print 'Done trying'
+        print cloudCommand.body
         if cloudCommand.body is not None:
            print 'Message has a body'
            gatewayId = config_data["Server"]["Deviceid"]
@@ -377,33 +415,3 @@ if __name__ == "__main__":
    except:
       logging.exception(datetime.now().strftime("%Y-%m-%dT%H:%M:%S"))
       revertToPreviousVersion()
-
-def updateGatewayScript():
-    gatewayScriptFileName = 'smart_gateway.py'
-    renamedGatewayScriptFileName = 'smart_gateway_previous.py'
-    directory = getcwd()
-    
-    filename = directory + gatewayScriptFileName
-
-    os.rename(gatewayScriptFileName, renamedGatewayScriptFileName)
-
-    try:
-        r = requests.get('https://raw.githubusercontent.com/vicy07/IoT_At_Home/master/Gateway/smart_gateway.py')
-        f = open(filename, 'w')
-        f.write(r.content)
-    except:
-        os.rename(renamedGatewayScriptFileName, gatewayScriptFileName)
-        print 'Update failed, reverting to previous version'
-
-    os.execl(gatewayScriptFileName, sys.argv[1:])
-
-def revertToPreviousVersion():
-    gatewayScriptFileName = 'smart_gateway.py'
-    renamedGatewayScriptFileName = 'smart_gateway_previous.py'
-    directory = getcwd()
-    
-    filename = directory + gatewayScriptFileName
-
-    os.rename(renamedGatewayScriptFileName, gatewayScriptFileName)
-
-    os.execl(gatewayScriptFileName, sys.argv[1:])
