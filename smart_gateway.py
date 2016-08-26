@@ -275,6 +275,9 @@ def main(argv):
 
    
    queue_name = 'custom_' + config_data["Server"]["id"] + '_' + config_data["Server"]["Deviceid"]
+   print config_data["Servicebus"]["namespace"]
+   print config_data["Servicebus"]["shared_access_key_name"]
+   print config_data["Servicebus"]["shared_access_key_value"]
    bus_service = ServiceBusService( service_namespace=config_data["Servicebus"]["namespace"], 
                                     shared_access_key_name=config_data["Servicebus"]["shared_access_key_name"], 
                                     shared_access_key_value=config_data["Servicebus"]["shared_access_key_value"])
