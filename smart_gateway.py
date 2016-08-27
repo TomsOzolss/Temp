@@ -33,13 +33,33 @@ logging.basicConfig(level=logging.ERROR, filename=os.path.dirname(os.path.abspat
 
 session = FuturesSession(max_workers=10)
 
+class ThreadManager(object):
+    running = False
+    
+    def new_thread(self):
+        if running == False
+            running = True
+            thread = Thread(target=checkCloudCommand, args=(bus_service, queue_name, localCommandSendAckWaitList, config_data))
+            return thread
+        return None
+    def on_thread_finished(self, thread):
+        running = False
+
+class CheckQueueThread(Thread):
+    def __init__(self, parent=None):
+        self.parent = parent
+        super(CheckQueueThread, self).__init__()
+
+    def run(self):
+        self.parent and self.parent.on_thread_finished(self)
+
 ##################################
 #   Update the gateway script    #
 ##################################
 def updateGatewayScript():
     gatewayScriptFileName = 'smart_gateway.py'
     renamedGatewayScriptFileName = 'smart_gateway_previous.py'
-    directory = getcwd()
+    directory = os.getcwd()
     
     filename = directory + gatewayScriptFileName
 
@@ -61,7 +81,7 @@ def updateGatewayScript():
 def revertToPreviousVersion():
     gatewayScriptFileName = 'smart_gateway.py'
     renamedGatewayScriptFileName = 'smart_gateway_previous.py'
-    directory = getcwd()
+    directory = os.getcwd()
     
     filename = directory + gatewayScriptFileName
 
@@ -282,7 +302,7 @@ def main(argv):
                                     shared_access_key_name=config_data["Servicebus"]["shared_access_key_name"], 
                                     shared_access_key_value=config_data["Servicebus"]["shared_access_key_value"])
    try:
-      bus_service.receive_queue_message(queue_name, peek_lock=False)
+      bus_service.receive_queue_message(queue_name, peek_lock=True)
       print '  Succesfully connected to queue'
       print '  Actuator queue: ' + queue_name
    except:
@@ -369,10 +389,11 @@ def main(argv):
        if queue_name <> '':
           # if check timeout is gone go to Azure and grab command to execute
           tdelta = nowPI-cloudCommandLastCheck
-          if (abs(tdelta.total_seconds()) > 10):
+          manager = ThreadManager()
+          thread = manager.new_thread()
+          if (abs(tdelta.total_seconds()) > 10) and thread is not None:
              cloudCommandLastCheck = datetime.now()
-             thread = Thread(target=checkCloudCommand, args=(bus_service, queue_name, localCommandSendAckWaitList, config_data))
-             thread.start()
+             thread.run()
 
           if debugMode == 1: print localCommandSendAckWaitList
           # Repeat sending/span commands while list is not empty
@@ -391,16 +412,16 @@ def checkCloudCommand(bus_service, queue_name, localCommandSendAckWaitList, conf
         cloudCommand = bus_service.receive_queue_message(queue_name, peek_lock=False)
         print cloudCommand.body
         if cloudCommand.body is not None:
-           print 'Message has a body'
            gatewayId = config_data["Server"]["Deviceid"]
            stringCommand = str(cloudCommand.body)
            print 'C: Received "' + stringCommand + '" => ',
 
            #Tranlate External/Cloud ID to local network ID 
            temp = stringCommand.split("-")
-           if gatewayId is temp[0]:
+           if gatewayId == temp[0]:
                print 'Updating the gateway script'
-               updateGatewayScript()
+               if temp[1] == 'Update'
+                    updateGatewayScript()
            else:
                #print 'stringCommand.split = ', temp
                localNetworkDeviceID = config_data["Devices"].keys()[config_data["Devices"].values().index(temp[0])]
