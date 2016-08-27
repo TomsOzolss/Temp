@@ -34,14 +34,26 @@ logging.basicConfig(level=logging.ERROR, filename=os.path.dirname(os.path.abspat
 session = FuturesSession(max_workers=10)
 
 class ThreadManager(object):
-    running = False
-    
+    running = None
+    bus_service = None
+    queue_name = None
+    localCommandSendAckWaitList = None
+    config_data = None
+
+    def __init__(self, bus_service, queue_name, localCommandSendAckWaitList, config_data)
+        self.running = False
+        self.bus_service = bus_service
+        self.queue_name = queue_name
+        self.localCommandSendAckWaitList = localCommandSendAckWaitList
+        self.config_data = config_data
+
     def new_thread(self):
-        if running == False
+        if running == False:
             running = True
-            thread = Thread(target=checkCloudCommand, args=(bus_service, queue_name, localCommandSendAckWaitList, config_data))
+            thread = Thread(target=checkCloudCommand, args=(self.bus_service, self.queue_name, self.localCommandSendAckWaitList, self.config_data))
             return thread
         return None
+
     def on_thread_finished(self, thread):
         running = False
 
@@ -295,9 +307,6 @@ def main(argv):
 
    
    queue_name = 'custom_' + config_data["Server"]["id"] + '_' + config_data["Server"]["Deviceid"]
-   print config_data["Servicebus"]["namespace"]
-   print config_data["Servicebus"]["shared_access_key_name"]
-   print config_data["Servicebus"]["shared_access_key_value"]
    bus_service = ServiceBusService( service_namespace=config_data["Servicebus"]["namespace"], 
                                     shared_access_key_name=config_data["Servicebus"]["shared_access_key_name"], 
                                     shared_access_key_value=config_data["Servicebus"]["shared_access_key_value"])
@@ -389,7 +398,7 @@ def main(argv):
        if queue_name <> '':
           # if check timeout is gone go to Azure and grab command to execute
           tdelta = nowPI-cloudCommandLastCheck
-          manager = ThreadManager()
+          manager = ThreadManager(bus_service, queue_name, localCommandSendAckWaitList, config_data)
           thread = manager.new_thread()
           if (abs(tdelta.total_seconds()) > 10) and thread is not None:
              cloudCommandLastCheck = datetime.now()
@@ -420,7 +429,7 @@ def checkCloudCommand(bus_service, queue_name, localCommandSendAckWaitList, conf
            temp = stringCommand.split("-")
            if gatewayId == temp[0]:
                print 'Updating the gateway script'
-               if temp[1] == 'Update'
+               if temp[1] == 'Update':
                     updateGatewayScript()
            else:
                #print 'stringCommand.split = ', temp
